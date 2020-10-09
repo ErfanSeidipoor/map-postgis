@@ -1,0 +1,100 @@
+<body>
+    <div id="header" class="col-md-12">
+        <h1 class="text-center">Mexico city</h1>
+    </div>
+    <div class="row">
+        <div id="side_panel" class="col-md-3">
+            <h1 class="text-center">Attractions</h1>
+        </div>
+        <div id="mapdiv" class="col-md-9"></div>
+    </div>
+
+    <div class="footer" class="col-md-12">
+        <h4 id="map_coords" class="text-center">Latitude: 19.4 Longitude:-99.1 Zoom Level: 11</h4>
+        <h4 class="text-center">&copy: 2016 <a href="http://millermountain.com"> Miller mountain LLC</a></h4>
+    </div>
+</body>
+
+
+<style>
+    body {
+        padding: 0;
+        margin: 0;
+        border: 0;
+    }
+
+    #header {
+        height: 75px;
+        background-color: darkgoldenrod;
+    }
+
+    #mapdiv {
+        height: 650px;
+        background-color: salmon;
+        display: block;
+    }
+
+    #side_panel {
+        height: 650px;
+        background-color: beige;
+    }
+
+    #footer {
+        height: 75px;
+        background-color: darkgray;
+    }
+
+    .attraction {
+        margin-bottom: 5px;
+    }
+
+</style>
+
+    <script>
+        var mymap= L.map('mapdiv')
+        mymap.setView([19.4,-99.1], 11)
+
+        var backgroundLayer = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png')
+        mymap.addLayer(backgroundLayer)
+
+        $("#zoomToZocalo").click( function() {
+            mymap.setView([19.43278, -99.1333], 17)
+        })
+
+        mymap.on("mousemove", function (e) {
+            $('#map_coords').html(`Latitude: ${e.latlng.lat.toFixed(5)} Longitude:${e.latlng.lng.toFixed(5)} Zoom Level: ${mymap.getZoom()}`)
+        })
+
+        $.ajax('/attractions')
+            .done(data=>{
+
+                const layerGroup = []
+
+                data.forEach((item,index)=>{
+                    const { name, web, image, geojson} = item
+                    const { coordinates:[lng,lat] } = JSON.parse(geojson)
+                    
+                    var str= `
+                        <h4>${name}</h4><hr>
+                        <a href="${web}" target="blank">
+                            <img src="img/${image}" width="200px"/>
+                        </a>
+                    `
+
+                    $("#side_panel").append(`<button id="zoomTo${name.replace(/ /g,'')}" class=" attraction form-control btn-primary">${name}</button>`)
+
+                    $(`#zoomTo${name.replace(/ /g,'')}`).click( function() {
+                        mymap.setView([lat, lng], 17)
+                    })
+
+                    layerGroup.push(L.marker([lat, lng]).bindPopup(str))
+                })
+                
+                var cities = L.layerGroup(layerGroup);
+
+                cities.addTo(mymap)
+
+            })
+
+
+    </script>

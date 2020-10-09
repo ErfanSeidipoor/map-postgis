@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+    <head>
+        <title>webmap101</title>
+        <link rel="stylesheet" href="./css/bootstrap.min.css" />
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin=""/>
+
+        <!-- <script
+            src="./js/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""
+        ></script> -->
+
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+
+        <script  src="./js/jquery-3.5.1.min.js"  ></script>
+        <script  src="./js/leaflet.ajax.min.js"  ></script>
+        <script  src="./js/turf.min.js"  ></script>
+
+        <style>
+            body {
+                padding: 0;
+                margin: 0;
+                border: 0;
+            }
+
+            #header {
+                height: 75px;
+                background-color: darkgoldenrod;
+            }
+
+            #mapdiv {
+                height: 650px;
+                background-color: salmon;
+                display: block;
+            }
+
+            #side_panel {
+                height: 650px;
+                background-color: beige;
+            }
+
+            #footer {
+                height: 75px;
+                background-color: darkgray;
+            }
+
+            .attraction {
+                margin-bottom: 5px;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="header" class="col-md-12">
+            <h1 class="text-center">Mexico city</h1>
+        </div>
+        <div class="row">
+            <div id="side_panel" class="col-md-3">
+                <h1 class="text-center">Attractions</h1>
+                <button id="btnBufer" class="form-control btn-warning attraction">Buffer</button>
+            </div>
+            <div id="mapdiv" class="col-md-9"></div>
+        </div>
+
+        <div class="footer" class="col-md-12">
+            <h4 id="map_coords" class="text-center">Latitude: 19.4 Longitude:-99.1 Zoom Level: 11</h4>
+            <h4 class="text-center">&copy: 2016 <a href="http://millermountain.com"> Miller mountain LLC</a></h4>
+        </div>
+    </body>
+
+
+    <script>
+        var mymap= L.map('mapdiv')
+        mymap.setView([19.4,-99.1], 11)
+
+        var backgroundLayer = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png')
+        mymap.addLayer(backgroundLayer)
+
+        $("#zoomToZocalo").click( function() {
+            mymap.setView([19.43278, -99.1333], 17)
+        })
+
+        mymap.on("mousemove", function (e) {
+            $('#map_coords').html(`Latitude: ${e.latlng.lat.toFixed(5)} Longitude:${e.latlng.lng.toFixed(5)} Zoom Level: ${mymap.getZoom()}`)
+        })
+
+
+        
+
+        var geoJsonLayer = new L.GeoJSON.AJAX(
+            './resources/attractions1.geojson',
+            {
+                pointToLayer: function (feature, latlng) {
+                    var str= `
+                        <h4>${feature.properties.name}</h4><hr>
+                        <a href="${feature.properties.web}" target="blank">
+                            <img src="img/${feature.properties.image}" width="200px"/>
+                        </a>
+                    `
+
+                    $("#side_panel").append(`<button id="zoomTo${feature.properties.name.replace(/ /g,'')}" class=" attraction form-control btn-primary">${feature.properties.name}</button>`)
+
+                    $(`#zoomTo${feature.properties.name.replace(/ /g,'')}`).click( function() {
+                        mymap.setView([latlng.lat, latlng.lng], 17)
+                    })
+
+                    return L.marker(latlng).bindPopup(str)
+                }
+            }
+        ).addTo(mymap)
+
+        var bufferLayer;
+
+        $('#btnBufer').click( function () {
+
+            if($('#btnBufer').html()==="Buffer") {
+                var bufferAttractions =  turf.buffer(geoJsonLayer.toGeoJSON(), 1,{units: 'miles'})
+                bufferLayer = L.geoJSON(bufferAttractions).addTo(mymap)
+                $('#btnBufer').html("remove Buffer")
+            }
+            else {
+                $('#btnBufer').html("Buffer")
+                mymap.removeLayer(bufferLayer)
+            }
+        })
+
+    </script>
+</html>
